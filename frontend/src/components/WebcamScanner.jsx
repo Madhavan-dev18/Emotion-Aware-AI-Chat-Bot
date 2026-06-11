@@ -4,15 +4,15 @@ import { Brain, Camera, CameraOff } from "lucide-react";
 
 export default function WebcamScanner({ onEmotionDetected }) {
   const videoRef = useRef(null);
-  const intervalRef = useRef(null); // ADDED: To track and kill the interval
+  const timeoutRef = useRef(null); // safely tracks the timeout loop
   const [isInitializing, setIsInitializing] = useState(true);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [currentEmotion, setCurrentEmotion] = useState("neutral");
 
-  // ADDED: Cleanup interval when component unmounts
+  // Cleanup to prevent memory leaks if the user navigates away
   useEffect(() => {
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, []);
 
@@ -51,20 +51,22 @@ export default function WebcamScanner({ onEmotionDetected }) {
     if (video && video.srcObject) {
       video.srcObject.getTracks().forEach((track) => track.stop());
       setIsCameraActive(false);
-      // ADDED: Kill the detection loop
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+      // Kill the detection loop immediately
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
       }
     }
   };
 
   const handleVideoPlay = () => {
-    // ADDED: Prevent duplicate intervals
-    if (intervalRef.current) clearInterval(intervalRef.current);
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
     
-    intervalRef.current = setInterval(async () => {
-      if (videoRef.current && isCameraActive) {
+    // Recursive function ensures frames process one at a time sequentially
+    const scanFrame = async () => {
+      if (!isCameraActive || !videoRef.current) return;
+
+      try {
         const detections = await faceapi
           .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions())
           .withFaceExpressions();
@@ -80,8 +82,15 @@ export default function WebcamScanner({ onEmotionDetected }) {
             if (onEmotionDetected) onEmotionDetected(dominant);
           }
         }
+      } catch (err) {
+        console.warn("Frame scan failed:", err);
       }
-    }, 1000);
+
+      // Schedule next scan ONLY after the current one finishes
+      timeoutRef.current = setTimeout(scanFrame, 1000);
+    };
+
+    scanFrame();
   };
 
   return (

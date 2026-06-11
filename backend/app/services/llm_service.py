@@ -77,7 +77,7 @@ def _get_fallback_response(emotion: str, sentiment: str) -> str:
 
 def _build_system_prompt(emotion_data: dict, memory_summary: str) -> str:
     emotion = emotion_data.get("primary_emotion", "neutral")
-    visual = emotion_data.get("visual_emotion", "neutral") # ADD THIS
+    visual = emotion_data.get("visual_emotion", "neutral")
     intensity = emotion_data.get("intensity", 0.5)
     sentiment = emotion_data.get("sentiment", "neutral")
 
@@ -89,7 +89,6 @@ Current emotional context:
 - Textual Emotion: {intensity_word} feeling **{emotion}** ({sentiment} valence)
 - Facial Expression: **{visual}**
 - Intensity: {intensity:.0%}
-# ... keep the rest of the prompt the same ...
 
 Conversation memory:
 {memory_summary or "No prior context."}
