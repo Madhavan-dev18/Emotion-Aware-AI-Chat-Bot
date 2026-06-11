@@ -4,14 +4,21 @@ import { Brain, Camera, CameraOff } from "lucide-react";
 
 export default function WebcamScanner({ onEmotionDetected }) {
   const videoRef = useRef(null);
+  const intervalRef = useRef(null); // ADDED: To track and kill the interval
   const [isInitializing, setIsInitializing] = useState(true);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [currentEmotion, setCurrentEmotion] = useState("neutral");
 
+  // ADDED: Cleanup interval when component unmounts
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
+
   useEffect(() => {
     const loadModels = async () => {
       try {
-        // We use the reliable unpkg CDN for the modern weights to avoid downloading 20MB of files manually
         const MODEL_URL = "https://unpkg.com/@vladmandic/face-api/model/";
         await Promise.all([
           faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
@@ -44,18 +51,25 @@ export default function WebcamScanner({ onEmotionDetected }) {
     if (video && video.srcObject) {
       video.srcObject.getTracks().forEach((track) => track.stop());
       setIsCameraActive(false);
+      // ADDED: Kill the detection loop
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
     }
   };
 
   const handleVideoPlay = () => {
-    setInterval(async () => {
+    // ADDED: Prevent duplicate intervals
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    
+    intervalRef.current = setInterval(async () => {
       if (videoRef.current && isCameraActive) {
         const detections = await faceapi
           .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions())
           .withFaceExpressions();
 
         if (detections) {
-          // Sort expressions by highest probability
           const expressions = detections.expressions;
           const dominant = Object.keys(expressions).reduce((a, b) =>
             expressions[a] > expressions[b] ? a : b
@@ -63,12 +77,11 @@ export default function WebcamScanner({ onEmotionDetected }) {
           
           if (dominant !== currentEmotion) {
             setCurrentEmotion(dominant);
-            // Send the emotion up to the Chat page
             if (onEmotionDetected) onEmotionDetected(dominant);
           }
         }
       }
-    }, 1000); // Scan every 1 second to save CPU
+    }, 1000);
   };
 
   return (
