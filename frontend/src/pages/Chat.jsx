@@ -126,11 +126,6 @@ export default function Chat() {
     setSending(true);
     setError('');
 
-    // The dirty hack: appending visual context directly to the text payload
-    const finalContent = visualEmotion !== "neutral" 
-      ? `${content} [My current facial expression is: ${visualEmotion}]` 
-      : content;
-
     try {
       // Send content AND visualEmotion as separate, clean JSON variables
       const res = await api.post(`/chat/sessions/${sessionId}/messages`, { 
@@ -141,13 +136,6 @@ export default function Chat() {
       setMessages((prev) => [
         ...prev.filter((m) => m.id !== optimisticUserMsg.id),
         res.data.user_message, // No more regex cleanup needed!
-        res.data.assistant_message,
-      ]);
-      setLatestEmotion(res.data.emotion);
-
-      setMessages((prev) => [
-        ...prev.filter((m) => m.id !== optimisticUserMsg.id),
-        cleanUserMsg,
         res.data.assistant_message,
       ]);
       setLatestEmotion(res.data.emotion);
