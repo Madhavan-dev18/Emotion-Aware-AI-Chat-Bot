@@ -89,13 +89,27 @@ def _rule_based_emotion(text: str) -> dict:
         "surprise": ["wow", "surprised", "shocked", "unexpected", "unbelievable", "omg", "wait what"],
         "disgust": ["disgusting", "gross", "horrible", "nasty", "awful", "yuck", "revolting"],
     }
-    scores = {}
-    for emotion, keywords in keyword_map.items():
-        count = sum(1 for kw in keywords if kw in text_lower)
-        scores[emotion] = min(0.1 + count * 0.25, 0.95)
 
-    # Normalise so they sum to 1
-    total = sum(scores.values()) or 1
+    raw_counts = {}
+    for emotion, keywords in keyword_map.items():
+        raw_counts[emotion] = sum(1 for kw in keywords if kw in text_lower)
+
+    total_matches = sum(raw_counts.values())
+
+    # No keyword matches anywhere -> definitively neutral. Don't let
+    # baseline scores tie-break into a random non-neutral emotion.
+    if total_matches == 0:
+        scores = {emotion: 0.0 for emotion in keyword_map}
+        scores["neutral"] = 1.0
+        return {"primary": "neutral", "scores": scores}
+
+    # Score only emotions that actually matched something
+    scores = {}
+    for emotion, count in raw_counts.items():
+        scores[emotion] = min(0.15 + count * 0.25, 0.95) if count > 0 else 0.0
+
+    # Normalise so they sum to <= 1, leaving the remainder for neutral
+    total = sum(scores.values())
     scores = {k: round(v / total, 4) for k, v in scores.items()}
     scores["neutral"] = round(max(0.0, 1 - sum(scores.values())), 4)
 
