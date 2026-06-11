@@ -5,7 +5,11 @@ import { Brain, Camera, CameraOff } from "lucide-react";
 export default function WebcamScanner({ onEmotionDetected }) {
   const videoRef = useRef(null);
   const timeoutRef = useRef(null);
-  const isActiveRef = useRef(false); // FIXED: Ref to avoid stale closure
+  const isActiveRef = useRef(false);
+  
+  // The Emotion Buffer prevents rapid text flickering
+  const emotionBuffer = useRef([]); 
+  
   const [isInitializing, setIsInitializing] = useState(true);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [currentEmotion, setCurrentEmotion] = useState("neutral");
@@ -45,7 +49,7 @@ export default function WebcamScanner({ onEmotionDetected }) {
           video.srcObject = stream;
           video.play();
           setIsCameraActive(true);
-          isActiveRef.current = true; // Sync ref with state
+          isActiveRef.current = true;
         }
       })
       .catch((err) => console.error("Error accessing webcam:", err));
@@ -57,7 +61,7 @@ export default function WebcamScanner({ onEmotionDetected }) {
       video.srcObject.getTracks().forEach((track) => track.stop());
     }
     setIsCameraActive(false);
-    isActiveRef.current = false; // Instantly break the loop
+    isActiveRef.current = false;
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
@@ -68,33 +72,59 @@ export default function WebcamScanner({ onEmotionDetected }) {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
     const scanFrame = async () => {
-      // FIXED: Use ref to check active status to avoid the stale closure bug
       if (!isActiveRef.current || !videoRef.current) return;
 
       try {
+        // MAX ACCURACY SETTINGS: High resolution, low threshold
+        const options = new faceapi.TinyFaceDetectorOptions({ 
+          inputSize: 608, 
+          scoreThreshold: 0.2 
+        });
+
         const detections = await faceapi
-          .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions())
+          .detectSingleFace(videoRef.current, options)
           .withFaceExpressions();
 
         if (detections) {
           const expressions = detections.expressions;
-          const dominant = Object.keys(expressions).reduce((a, b) =>
-            expressions[a] > expressions[b] ? a : b
-          );
+          let dominant = "neutral";
+          let maxAdjustedScore = 0;
 
-          setCurrentEmotion((prev) => {
-            if (prev !== dominant) {
-              if (onEmotionDetected) onEmotionDetected(dominant);
-              return dominant;
+          for (const [emotion, score] of Object.entries(expressions)) {
+            // Aggressive sensitivity booster to break out of "neutral"
+            const multiplier = emotion === "neutral" ? 1.0 : 1.5; 
+            const adjustedScore = score * multiplier;
+
+            if (adjustedScore > maxAdjustedScore) {
+              maxAdjustedScore = adjustedScore;
+              dominant = emotion;
             }
-            return prev;
-          });
+          }
+
+          // FLICKER PROTECTION: Require 3 consecutive matching frames to change UI
+          emotionBuffer.current.push(dominant);
+          if (emotionBuffer.current.length > 3) {
+            emotionBuffer.current.shift(); // Keep only the last 3 frames
+          }
+
+          // If all 3 recent frames agree, update the state
+          if (emotionBuffer.current.every(val => val === emotionBuffer.current[0])) {
+            const stableEmotion = emotionBuffer.current[0];
+            setCurrentEmotion((prev) => {
+              if (prev !== stableEmotion) {
+                if (onEmotionDetected) onEmotionDetected(stableEmotion);
+                return stableEmotion;
+              }
+              return prev;
+            });
+          }
         }
       } catch (err) {
         console.warn("Frame scan failed:", err);
       }
 
-      timeoutRef.current = setTimeout(scanFrame, 1000);
+      // HYPERSPEED POLLING: 150ms (approx 6.6 FPS) instead of 1000ms
+      timeoutRef.current = setTimeout(scanFrame, 150);
     };
 
     scanFrame();
