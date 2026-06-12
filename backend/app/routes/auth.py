@@ -7,24 +7,16 @@ from flask_jwt_extended import (
     create_access_token,
     create_refresh_token,
     jwt_required,
-    get_jwt_identity,
-    set_access_cookies,
-    set_refresh_cookies,
-    unset_jwt_cookies
+    get_jwt_identity
 )
 from app import db, bcrypt
 from app.models import User
 
 auth_bp = Blueprint("auth", __name__)
 
-
-# ── Utility route to wipe stale/corrupted cookies ─────────────────────────
 @auth_bp.get("/clear")
 def clear_cookies():
-    response = jsonify({"msg": "All stale cookies destroyed."})
-    unset_jwt_cookies(response)
-    return response
-
+    return jsonify({"msg": "Cookie clearance no longer applicable."})
 
 @auth_bp.post("/register")
 def register():
@@ -44,7 +36,6 @@ def register():
         if len(password) < 8:
             return jsonify({"error": "Password must be at least 8 characters"}), 400
 
-        # Check for duplicates
         if User.query.filter_by(username=username).first():
             return jsonify({"error": "Username already taken"}), 409
         if User.query.filter_by(email=email).first():
@@ -60,22 +51,19 @@ def register():
         db.session.add(user)
         db.session.commit()
 
-        # Generate tokens (identity must be a string for flask-jwt-extended)
         access_token = create_access_token(identity=str(user.id))
         refresh_token = create_refresh_token(identity=str(user.id))
 
-        # Attach tokens to HTTPOnly cookies
-        response = jsonify({"user": user.to_public_dict()})
-        set_access_cookies(response, access_token)
-        set_refresh_cookies(response, refresh_token)
-
-        return response, 201
+        return jsonify({
+            "user": user.to_public_dict(),
+            "access_token": access_token,
+            "refresh_token": refresh_token
+        }), 201
 
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"REGISTER ERROR: {e}")
         return jsonify({"error": "Registration failed due to a database error."}), 500
-
 
 @auth_bp.post("/login")
 def login():
@@ -97,41 +85,30 @@ def login():
         user.last_seen = datetime.now(timezone.utc)
         db.session.commit()
 
-        # Generate tokens (identity must be a string for flask-jwt-extended)
         access_token = create_access_token(identity=str(user.id))
         refresh_token = create_refresh_token(identity=str(user.id))
 
-        # Attach tokens to HTTPOnly cookies
-        response = jsonify({"user": user.to_public_dict()})
-        set_access_cookies(response, access_token)
-        set_refresh_cookies(response, refresh_token)
-
-        return response
+        return jsonify({
+            "user": user.to_public_dict(),
+            "access_token": access_token,
+            "refresh_token": refresh_token
+        }), 200
 
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"LOGIN ERROR: {e}")
         return jsonify({"error": "Login failed due to a database error."}), 500
 
-
 @auth_bp.post("/logout")
 def logout():
-    # Destroy the cookies server-side
-    response = jsonify({"msg": "Logged out successfully"})
-    unset_jwt_cookies(response)
-    return response
-
+    return jsonify({"msg": "Logged out successfully"}), 200
 
 @auth_bp.post("/refresh")
 @jwt_required(refresh=True)
 def refresh():
-    user_id = get_jwt_identity()  # already a string
+    user_id = get_jwt_identity() 
     access_token = create_access_token(identity=user_id)
-
-    response = jsonify({"msg": "Token refreshed"})
-    set_access_cookies(response, access_token)
-    return response
-
+    return jsonify({"access_token": access_token}), 200
 
 @auth_bp.get("/me")
 @jwt_required()
@@ -141,7 +118,6 @@ def me():
     if not user:
         return jsonify({"error": "User not found"}), 404
     return jsonify({"user": user.to_public_dict()})
-
 
 @auth_bp.patch("/me")
 @jwt_required()
