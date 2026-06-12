@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import * as faceapi from "@vladmandic/face-api";
-import { Brain, Camera, CameraOff } from "lucide-react";
+import { Brain, Camera, CameraOff, Activity } from "lucide-react";
 
 export default function WebcamScanner({ onEmotionDetected }) {
   const videoRef = useRef(null);
@@ -12,6 +12,10 @@ export default function WebcamScanner({ onEmotionDetected }) {
   const [isInitializing, setIsInitializing] = useState(true);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [currentEmotion, setCurrentEmotion] = useState("neutral");
+
+  // TELEMETRY HUD: Stop hiding the failures
+  const [faceDetected, setFaceDetected] = useState(false);
+  const [rawScores, setRawScores] = useState({});
 
   useEffect(() => {
     return () => {
@@ -61,6 +65,8 @@ export default function WebcamScanner({ onEmotionDetected }) {
     }
     setIsCameraActive(false);
     isActiveRef.current = false;
+    setFaceDetected(false);
+    setRawScores({});
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
@@ -74,9 +80,10 @@ export default function WebcamScanner({ onEmotionDetected }) {
       if (!isActiveRef.current || !videoRef.current) return;
 
       try {
+        // Drop threshold to 0.1 to aggressively try and find faces in bad lighting
         const options = new faceapi.TinyFaceDetectorOptions({ 
           inputSize: 416, 
-          scoreThreshold: 0.2 
+          scoreThreshold: 0.1 
         });
 
         const detections = await faceapi
@@ -84,8 +91,10 @@ export default function WebcamScanner({ onEmotionDetected }) {
           .withFaceExpressions();
 
         if (detections) {
+          setFaceDetected(true);
           const expressions = detections.expressions;
-          
+          setRawScores(expressions); // Feed the diagnostic HUD
+
           let highestNonNeutralEmotion = "neutral";
           let highestNonNeutralScore = 0;
 
@@ -96,7 +105,6 @@ export default function WebcamScanner({ onEmotionDetected }) {
             }
           }
 
-          // DROP THRESHOLD TO 5%. Stop expecting theatrical facial expressions.
           let detectedEmotion = highestNonNeutralScore > 0.05 ? highestNonNeutralEmotion : "neutral";
 
           emotionBuffer.current.push(detectedEmotion);
@@ -104,14 +112,10 @@ export default function WebcamScanner({ onEmotionDetected }) {
             emotionBuffer.current.shift();
           }
 
-          // MICRO-EXPRESSION CATCHER: Destroy the "majority rules" dictatorship.
-          // If ANY frame in the last 1 second was non-neutral, prioritize it.
           const nonNeutralFrames = emotionBuffer.current.filter(e => e !== "neutral");
-          
           let outputEmotion = "neutral";
           
           if (nonNeutralFrames.length > 0) {
-            // Find the most common emotion AMONG THE NON-NEUTRAL FRAMES only.
             const counts = {};
             let maxCount = 0;
             for (const e of nonNeutralFrames) {
@@ -123,7 +127,6 @@ export default function WebcamScanner({ onEmotionDetected }) {
             }
           }
 
-          // Update state
           setCurrentEmotion((prev) => {
             if (prev !== outputEmotion) {
               if (onEmotionDetected) onEmotionDetected(outputEmotion);
@@ -131,6 +134,10 @@ export default function WebcamScanner({ onEmotionDetected }) {
             }
             return prev;
           });
+        } else {
+          // If detections is undefined, the model lost the face entirely
+          setFaceDetected(false);
+          setRawScores({});
         }
       } catch (err) {
         // Ignore expected dropped frames
@@ -141,6 +148,9 @@ export default function WebcamScanner({ onEmotionDetected }) {
 
     scanFrame();
   };
+
+  // Safe formatter for the raw math
+  const formatScore = (val) => (val ? (val * 100).toFixed(1) : "0.0");
 
   return (
     <div className="bg-ink border border-azure-800 rounded-xl p-4 flex flex-col items-center shadow-soft">
@@ -165,6 +175,9 @@ export default function WebcamScanner({ onEmotionDetected }) {
           <div className="text-azure-400/50 text-xs animate-pulse">Loading AI Core...</div>
         ) : !isCameraActive ? (
           <div className="text-azure-400/50 text-xs">Camera Offline</div>
+        ) : !faceDetected && isCameraActive ? (
+          // Stop failing silently. Tell the user they are invisible.
+          <div className="text-red-400/80 text-xs font-bold animate-pulse z-10 bg-black/60 px-3 py-1 rounded">No Face Detected</div>
         ) : null}
 
         <video
@@ -176,8 +189,26 @@ export default function WebcamScanner({ onEmotionDetected }) {
       </div>
 
       {isCameraActive && (
-        <div className="mt-3 text-xs text-azure-200 bg-azure-900/50 px-3 py-1 rounded-full capitalize">
-          Detected: <span className="font-bold text-azure-400">{currentEmotion}</span>
+        <div className="w-full mt-3 space-y-2">
+          <div className="text-xs text-azure-200 bg-azure-900/50 px-3 py-2 rounded-lg flex items-center justify-between">
+            <span>Locked Output:</span>
+            <span className="font-bold text-azure-400 uppercase tracking-wider">{currentEmotion}</span>
+          </div>
+
+          {/* RAW TELEMETRY OVERLAY */}
+          <div className="bg-black/40 rounded-lg p-2.5 text-[10px] text-azure-300/70 font-mono">
+            <div className="flex items-center gap-1.5 mb-1.5 border-b border-azure-800/50 pb-1.5">
+              <Activity size={12} className="text-azure-400" /> Raw Neural Telemetry
+            </div>
+            <div className="grid grid-cols-2 gap-y-1 gap-x-2">
+              <div className="text-azure-200">Neutral: {formatScore(rawScores.neutral)}%</div>
+              <div className={rawScores.happy > 0.05 ? "text-green-400 font-bold" : ""}>Happy: {formatScore(rawScores.happy)}%</div>
+              <div className={rawScores.sad > 0.05 ? "text-blue-400 font-bold" : ""}>Sad: {formatScore(rawScores.sad)}%</div>
+              <div className={rawScores.angry > 0.05 ? "text-red-400 font-bold" : ""}>Angry: {formatScore(rawScores.angry)}%</div>
+              <div className={rawScores.surprised > 0.05 ? "text-yellow-400 font-bold" : ""}>Surprise: {formatScore(rawScores.surprised)}%</div>
+              <div className={rawScores.fear > 0.05 ? "text-purple-400 font-bold" : ""}>Fear: {formatScore(rawScores.fear)}%</div>
+            </div>
+          </div>
         </div>
       )}
     </div>
