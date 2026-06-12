@@ -44,9 +44,9 @@ export default function WebcamScanner({ onEmotionDetected }) {
   useEffect(() => {
     const loadHeavyModels = async () => {
       try {
-        // FIXED: Pointing to local assets instead of a 3rd party CDN
-        const MODEL_URL = "/models";
-        // We use SSD MobileNet V1 because it is mathematically superior to TinyFace
+        // PERMANENT FIX: Pulling weights directly from CDN. Bypassing broken Vercel routing.
+        const MODEL_URL = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model";
+        
         await Promise.all([
           faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
           faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
@@ -122,8 +122,6 @@ export default function WebcamScanner({ onEmotionDetected }) {
     const imageData = ctx.getImageData(0, 0, 64, 64).data;
     let brightnessSum = 0;
     
-    // FIXED: i += 16 jumps by 4 full pixels. 
-    // Previous i += 4 just jumped 1 pixel (R, G, B, A).
     for (let i = 0; i < imageData.length; i += 16) {
       // Perceived luminance formula
       brightnessSum += (0.299 * imageData[i] + 0.587 * imageData[i+1] + 0.114 * imageData[i+2]);
