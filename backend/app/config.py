@@ -32,7 +32,14 @@ class ProductionConfig(BaseConfig):
     DEBUG = False
     SQLALCHEMY_DATABASE_URI = os.getenv(
         "DATABASE_URL", "sqlite:///moodlens_prod.db"
-    ).replace("postgres://", "postgresql://")  # Render/Railway compat
+    ).replace("postgres://", "postgresql://")
+    
+    # You completely forgot this. It forces SQLAlchemy to test connections 
+    # before using them, preventing crashes from dropped cloud connections.
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+        "pool_recycle": 300,
+    }
 
 
 class TestingConfig(BaseConfig):
