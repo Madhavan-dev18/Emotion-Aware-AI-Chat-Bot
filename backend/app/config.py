@@ -15,6 +15,7 @@ class Config:
 
     JWT_TOKEN_LOCATION = ["cookies"]
     JWT_COOKIE_SECURE = False
+    JWT_COOKIE_SAMESITE = "Lax"
     JWT_ACCESS_COOKIE_PATH = '/api/'
     JWT_REFRESH_COOKIE_PATH = '/api/auth/refresh'
 
@@ -29,6 +30,10 @@ class DevelopmentConfig(Config):
 class ProductionConfig(Config):
     DEBUG = False
     JWT_COOKIE_SECURE = True
+    # Frontend (Vercel) and backend (Render) are on different domains, so
+    # auth cookies must be SameSite=None for the browser to send them on
+    # cross-site XHR/fetch requests. Requires Secure=True (set above).
+    JWT_COOKIE_SAMESITE = "None"
 
     # Supabase pooler (port 6543) runs PgBouncer in transaction mode.
     # - sslmode=require: Supabase requires SSL on all external connections.
