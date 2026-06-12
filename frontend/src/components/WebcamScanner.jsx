@@ -74,7 +74,6 @@ export default function WebcamScanner({ onEmotionDetected }) {
       if (!isActiveRef.current || !videoRef.current) return;
 
       try {
-        // Lowered inputSize to 416 so it doesn't violently lag the browser
         const options = new faceapi.TinyFaceDetectorOptions({ 
           inputSize: 416, 
           scoreThreshold: 0.2 
@@ -87,7 +86,6 @@ export default function WebcamScanner({ onEmotionDetected }) {
         if (detections) {
           const expressions = detections.expressions;
           
-          // 1. Explicitly isolate the strongest real emotion, ignoring neutral
           let highestNonNeutralEmotion = "neutral";
           let highestNonNeutralScore = 0;
 
@@ -98,33 +96,38 @@ export default function WebcamScanner({ onEmotionDetected }) {
             }
           }
 
-          // 2. If a real emotion has even 10% confidence, prioritize it. 
-          // Stop letting the 90% resting neutral face win every single frame.
-          let detectedEmotion = highestNonNeutralScore > 0.1 ? highestNonNeutralEmotion : "neutral";
+          // DROP THRESHOLD TO 5%. Stop expecting theatrical facial expressions.
+          let detectedEmotion = highestNonNeutralScore > 0.05 ? highestNonNeutralEmotion : "neutral";
 
-          // 3. Fix the buffer: use a rolling window of 5 frames
           emotionBuffer.current.push(detectedEmotion);
           if (emotionBuffer.current.length > 5) {
             emotionBuffer.current.shift();
           }
 
-          // 4. Determine the 'majority rules' emotion, allowing for frame jitter
-          const counts = {};
-          let mostFrequentEmotion = "neutral";
-          let maxCount = 0;
-          for (const e of emotionBuffer.current) {
-            counts[e] = (counts[e] || 0) + 1;
-            if (counts[e] > maxCount) {
-              maxCount = counts[e];
-              mostFrequentEmotion = e;
+          // MICRO-EXPRESSION CATCHER: Destroy the "majority rules" dictatorship.
+          // If ANY frame in the last 1 second was non-neutral, prioritize it.
+          const nonNeutralFrames = emotionBuffer.current.filter(e => e !== "neutral");
+          
+          let outputEmotion = "neutral";
+          
+          if (nonNeutralFrames.length > 0) {
+            // Find the most common emotion AMONG THE NON-NEUTRAL FRAMES only.
+            const counts = {};
+            let maxCount = 0;
+            for (const e of nonNeutralFrames) {
+              counts[e] = (counts[e] || 0) + 1;
+              if (counts[e] > maxCount) {
+                maxCount = counts[e];
+                outputEmotion = e;
+              }
             }
           }
 
           // Update state
           setCurrentEmotion((prev) => {
-            if (prev !== mostFrequentEmotion) {
-              if (onEmotionDetected) onEmotionDetected(mostFrequentEmotion);
-              return mostFrequentEmotion;
+            if (prev !== outputEmotion) {
+              if (onEmotionDetected) onEmotionDetected(outputEmotion);
+              return outputEmotion;
             }
             return prev;
           });
