@@ -2,12 +2,15 @@
 
 import json
 from datetime import datetime, timezone
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify
 from flask_jwt_extended import (
     create_access_token,
     create_refresh_token,
     jwt_required,
     get_jwt_identity,
+    set_access_cookies,      # NEW
+    set_refresh_cookies,     # NEW
+    unset_jwt_cookies        # NEW
 )
 from app import db, bcrypt
 from app.models import User
@@ -48,14 +51,16 @@ def register():
     db.session.add(user)
     db.session.commit()
 
+    # Generate tokens
     access_token = create_access_token(identity=user.id)
     refresh_token = create_refresh_token(identity=user.id)
 
-    return jsonify({
-        "user": user.to_public_dict(),
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-    }), 201
+    # Attach tokens to HTTPOnly cookies instead of JSON payload
+    response = jsonify({"user": user.to_public_dict()})
+    set_access_cookies(response, access_token)
+    set_refresh_cookies(response, refresh_token)
+    
+    return response, 201
 
 
 @auth_bp.post("/login")
@@ -77,14 +82,24 @@ def login():
     user.last_seen = datetime.now(timezone.utc)
     db.session.commit()
 
+    # Generate tokens
     access_token = create_access_token(identity=user.id)
     refresh_token = create_refresh_token(identity=user.id)
 
-    return jsonify({
-        "user": user.to_public_dict(),
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-    })
+    # Attach tokens to HTTPOnly cookies
+    response = jsonify({"user": user.to_public_dict()})
+    set_access_cookies(response, access_token)
+    set_refresh_cookies(response, refresh_token)
+    
+    return response
+
+
+@auth_bp.post("/logout")
+def logout():
+    # Because tokens are in cookies, the server must explicitly clear them
+    response = jsonify({"msg": "Logged out successfully"})
+    unset_jwt_cookies(response)
+    return response
 
 
 @auth_bp.post("/refresh")
@@ -92,7 +107,10 @@ def login():
 def refresh():
     user_id = get_jwt_identity()
     access_token = create_access_token(identity=user_id)
-    return jsonify({"access_token": access_token})
+    
+    response = jsonify({"msg": "Token refreshed"})
+    set_access_cookies(response, access_token)
+    return response
 
 
 @auth_bp.get("/me")

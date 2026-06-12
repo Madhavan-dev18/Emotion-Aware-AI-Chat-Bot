@@ -1,56 +1,58 @@
-"""
-Configuration classes for MoodLens backend.
-Uses environment variables; falls back to safe dev defaults.
-"""
-
 import os
 from datetime import timedelta
 
+class Config:
+    """Base configuration."""
+    # ── App Security ─────────────────────────────────────────────────────
+    SECRET_KEY = os.getenv("SECRET_KEY", "super-secret-fallback-key")
 
-class BaseConfig:
-    SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-change-in-prod-abc123")
+    # ── Database Configuration ───────────────────────────────────────────
+    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "sqlite:///moodlens.db")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)
-    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
-    # HuggingFace model names — no API key required for inference on free tier
-    EMOTION_MODEL = os.getenv("EMOTION_MODEL", "j-hartmann/emotion-english-distilroberta-base")
-    SENTIMENT_MODEL = os.getenv("SENTIMENT_MODEL", "cardiffnlp/twitter-roberta-base-sentiment-latest")
-    # Groq free tier LLM (set GROQ_API_KEY in .env; free 14k req/day)
-  # Groq free tier LLM (set GROQ_API_KEY in .env; free 14k req/day)
+
+    # ── LLM / AI Configuration ───────────────────────────────────────────
     GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-    GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant") # FIXED DEAD MODEL
-    # Fallback: rule-based responses when no API key set
-    USE_LOCAL_RESPONSES = os.getenv("USE_LOCAL_RESPONSES", "true").lower() == "true"
-    MAX_MEMORY_TURNS = int(os.getenv("MAX_MEMORY_TURNS", "10"))
+    GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+    MAX_MEMORY_TURNS = int(os.getenv("MAX_MEMORY_TURNS", 10))
 
-
-class DevelopmentConfig(BaseConfig):
-    DEBUG = True
-    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "sqlite:///moodlens_dev.db")
-
-
-class ProductionConfig(BaseConfig):
-    DEBUG = False
-    SQLALCHEMY_DATABASE_URI = os.getenv(
-        "DATABASE_URL", "sqlite:///moodlens_prod.db"
-    ).replace("postgres://", "postgresql://")
+    # ── Base JWT Configuration ───────────────────────────────────────────
+    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "jwt-super-secret-key")
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
+    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
     
-    # You completely forgot this. It forces SQLAlchemy to test connections 
-    # before using them, preventing crashes from dropped cloud connections.
+    # ── JWT Cookie Configuration (HTTPOnly XSS Protection) ───────────────
+    JWT_TOKEN_LOCATION = ["cookies"]
+    # Default to False for local development over HTTP. Overridden in Production.
+    JWT_COOKIE_SECURE = False 
+    JWT_ACCESS_COOKIE_PATH = '/api/'
+    JWT_REFRESH_COOKIE_PATH = '/api/auth/refresh'
+    # Note: Disabled for this rapid patch to avoid frontend header overhead.
+    # Enable this in the future to protect against Cross-Site Request Forgery.
+    JWT_COOKIE_CSRF_PROTECT = False
+
+
+class DevelopmentConfig(Config):
+    """Development environment settings."""
+    DEBUG = True
+
+
+class ProductionConfig(Config):
+    """Production environment settings."""
+    DEBUG = False
+    
+    # MUST BE TRUE IN PRODUCTION. Tells the browser to only send cookies over HTTPS.
+    JWT_COOKIE_SECURE = True 
+    
+    # Prevents dropped connections in production (replaces the old run.py hack)
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_pre_ping": True,
         "pool_recycle": 300,
     }
 
 
-class TestingConfig(BaseConfig):
-    TESTING = True
-    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(seconds=30)
-
-
+# Maps the string names to the actual objects so __init__.py can load them dynamically
 config_map = {
     "development": DevelopmentConfig,
     "production": ProductionConfig,
-    "testing": TestingConfig,
+    "default": DevelopmentConfig
 }
