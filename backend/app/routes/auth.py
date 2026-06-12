@@ -8,59 +8,71 @@ from flask_jwt_extended import (
     create_refresh_token,
     jwt_required,
     get_jwt_identity,
-    set_access_cookies,      # NEW
-    set_refresh_cookies,     # NEW
-    unset_jwt_cookies        # NEW
+    set_access_cookies,      
+    set_refresh_cookies,     
+    unset_jwt_cookies        
 )
 from app import db, bcrypt
 from app.models import User
 
 auth_bp = Blueprint("auth", __name__)
 
+# ── NEW: Utility route to wipe stale cookies ─────────────────────────────
+@auth_bp.get("/clear")
+def clear_cookies():
+    response = jsonify({"msg": "All stale cookies destroyed."})
+    unset_jwt_cookies(response)
+    return response
 
 @auth_bp.post("/register")
 def register():
-    data = request.get_json(silent=True) or {}
-    username = (data.get("username") or "").strip().lower()
-    email = (data.get("email") or "").strip().lower()
-    password = data.get("password") or ""
-    display_name = (data.get("display_name") or username).strip()
+    try:
+        data = request.get_json(silent=True) or {}
+        username = (data.get("username") or "").strip().lower()
+        email = (data.get("email") or "").strip().lower()
+        password = data.get("password") or ""
+        display_name = (data.get("display_name") or username).strip()
 
-    if not username or not email or not password:
-        return jsonify({"error": "username, email, and password are required"}), 400
+        if not username or not email or not password:
+            return jsonify({"error": "username, email, and password are required"}), 400
 
-    if len(username) < 3 or len(username) > 32:
-        return jsonify({"error": "Username must be 3–32 characters"}), 400
+        if len(username) < 3 or len(username) > 32:
+            return jsonify({"error": "Username must be 3–32 characters"}), 400
 
-    if len(password) < 8:
-        return jsonify({"error": "Password must be at least 8 characters"}), 400
+        if len(password) < 8:
+            return jsonify({"error": "Password must be at least 8 characters"}), 400
 
-    if User.query.filter_by(username=username).first():
-        return jsonify({"error": "Username already taken"}), 409
+        if User.query.filter_by(username=username).first():
+            return jsonify({"error": "Username already taken"}), 409
 
-    if User.query.filter_by(email=email).first():
-        return jsonify({"error": "Email already registered"}), 409
+        if User.query.filter_by(email=email).first():
+            return jsonify({"error": "Email already registered"}), 409
 
-    pw_hash = bcrypt.generate_password_hash(password).decode("utf-8")
-    user = User(
-        username=username,
-        email=email,
-        password_hash=pw_hash,
-        display_name=display_name,
-    )
-    db.session.add(user)
-    db.session.commit()
+        pw_hash = bcrypt.generate_password_hash(password).decode("utf-8")
+        user = User(
+            username=username,
+            email=email,
+            password_hash=pw_hash,
+            display_name=display_name,
+        )
+        db.session.add(user)
+        db.session.commit()
 
-    # Generate tokens
-    access_token = create_access_token(identity=user.id)
-    refresh_token = create_refresh_token(identity=user.id)
+        # Generate tokens
+        access_token = create_access_token(identity=user.id)
+        refresh_token = create_refresh_token(identity=user.id)
 
-    # Attach tokens to HTTPOnly cookies instead of JSON payload
-    response = jsonify({"user": user.to_public_dict()})
-    set_access_cookies(response, access_token)
-    set_refresh_cookies(response, refresh_token)
-    
-    return response, 201
+        # Attach tokens to HTTPOnly cookies
+        response = jsonify({"user": user.to_public_dict()})
+        set_access_cookies(response, access_token)
+        set_refresh_cookies(response, refresh_token)
+        
+        return response, 201
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"CRITICAL REGISTER ERROR: {str(e)}")
+        return jsonify({"error": f"Internal database error: {str(e)}"}), 500
 
 
 @auth_bp.post("/login")
