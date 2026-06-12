@@ -13,7 +13,7 @@ export default function WebcamScanner({ onEmotionDetected }) {
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [currentEmotion, setCurrentEmotion] = useState("neutral");
 
-  // TELEMETRY HUD: Stop hiding the failures
+  // TELEMETRY HUD
   const [faceDetected, setFaceDetected] = useState(false);
   const [rawScores, setRawScores] = useState({});
 
@@ -31,13 +31,14 @@ export default function WebcamScanner({ onEmotionDetected }) {
     const loadModels = async () => {
       try {
         const MODEL_URL = "https://unpkg.com/@vladmandic/face-api/model/";
+        // UPGRADE: Swapping the weak Tiny model for the highly accurate SSD MobileNet V1
         await Promise.all([
-          faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+          faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
           faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
         ]);
         setIsInitializing(false);
       } catch (error) {
-        console.error("Error loading face models:", error);
+        console.error("Error loading heavy face models:", error);
       }
     };
     loadModels();
@@ -80,10 +81,9 @@ export default function WebcamScanner({ onEmotionDetected }) {
       if (!isActiveRef.current || !videoRef.current) return;
 
       try {
-        // Drop threshold to 0.1 to aggressively try and find faces in bad lighting
-        const options = new faceapi.TinyFaceDetectorOptions({ 
-          inputSize: 416, 
-          scoreThreshold: 0.1 
+        // UPGRADE: Use SSD options with a low confidence threshold to force detection in bad environments
+        const options = new faceapi.SsdMobilenetv1Options({ 
+          minConfidence: 0.2 
         });
 
         const detections = await faceapi
@@ -93,7 +93,7 @@ export default function WebcamScanner({ onEmotionDetected }) {
         if (detections) {
           setFaceDetected(true);
           const expressions = detections.expressions;
-          setRawScores(expressions); // Feed the diagnostic HUD
+          setRawScores(expressions); 
 
           let highestNonNeutralEmotion = "neutral";
           let highestNonNeutralScore = 0;
@@ -135,7 +135,6 @@ export default function WebcamScanner({ onEmotionDetected }) {
             return prev;
           });
         } else {
-          // If detections is undefined, the model lost the face entirely
           setFaceDetected(false);
           setRawScores({});
         }
@@ -149,7 +148,6 @@ export default function WebcamScanner({ onEmotionDetected }) {
     scanFrame();
   };
 
-  // Safe formatter for the raw math
   const formatScore = (val) => (val ? (val * 100).toFixed(1) : "0.0");
 
   return (
@@ -157,7 +155,7 @@ export default function WebcamScanner({ onEmotionDetected }) {
       <div className="flex items-center justify-between w-full mb-3">
         <h3 className="text-azure-100 text-sm font-semibold flex items-center gap-2">
           <Brain size={16} className="text-azure-400" />
-          Visual Cortex
+          Visual Cortex (SSD)
         </h3>
         <button
           onClick={isCameraActive ? stopVideo : startVideo}
@@ -172,11 +170,12 @@ export default function WebcamScanner({ onEmotionDetected }) {
 
       <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden flex items-center justify-center">
         {isInitializing ? (
-          <div className="text-azure-400/50 text-xs animate-pulse">Loading AI Core...</div>
+          <div className="text-azure-400/50 text-xs animate-pulse text-center px-4">
+            Loading Heavy SSD AI Core...<br/>(This takes longer)
+          </div>
         ) : !isCameraActive ? (
           <div className="text-azure-400/50 text-xs">Camera Offline</div>
         ) : !faceDetected && isCameraActive ? (
-          // Stop failing silently. Tell the user they are invisible.
           <div className="text-red-400/80 text-xs font-bold animate-pulse z-10 bg-black/60 px-3 py-1 rounded">No Face Detected</div>
         ) : null}
 
@@ -195,10 +194,9 @@ export default function WebcamScanner({ onEmotionDetected }) {
             <span className="font-bold text-azure-400 uppercase tracking-wider">{currentEmotion}</span>
           </div>
 
-          {/* RAW TELEMETRY OVERLAY */}
           <div className="bg-black/40 rounded-lg p-2.5 text-[10px] text-azure-300/70 font-mono">
             <div className="flex items-center gap-1.5 mb-1.5 border-b border-azure-800/50 pb-1.5">
-              <Activity size={12} className="text-azure-400" /> Raw Neural Telemetry
+              <Activity size={12} className="text-azure-400" /> SSD Neural Telemetry
             </div>
             <div className="grid grid-cols-2 gap-y-1 gap-x-2">
               <div className="text-azure-200">Neutral: {formatScore(rawScores.neutral)}%</div>
