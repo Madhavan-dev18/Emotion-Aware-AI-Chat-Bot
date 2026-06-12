@@ -16,8 +16,9 @@ class BaseConfig:
     EMOTION_MODEL = os.getenv("EMOTION_MODEL", "j-hartmann/emotion-english-distilroberta-base")
     SENTIMENT_MODEL = os.getenv("SENTIMENT_MODEL", "cardiffnlp/twitter-roberta-base-sentiment-latest")
     # Groq free tier LLM (set GROQ_API_KEY in .env; free 14k req/day)
+  # Groq free tier LLM (set GROQ_API_KEY in .env; free 14k req/day)
     GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-    GROQ_MODEL = os.getenv("GROQ_MODEL", "llama3-8b-8192")
+    GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant") # FIXED DEAD MODEL
     # Fallback: rule-based responses when no API key set
     USE_LOCAL_RESPONSES = os.getenv("USE_LOCAL_RESPONSES", "true").lower() == "true"
     MAX_MEMORY_TURNS = int(os.getenv("MAX_MEMORY_TURNS", "10"))

@@ -112,12 +112,13 @@ def send_message(session_id):
     ]
 
     # ── 4. Generate response ─────────────────────────────────────────────
+# ── 4. Generate response ─────────────────────────────────────────────
     llm_result = llm_service.generate_response(
         user_message=content,
         emotion_data=emotion_data,
         conversation_history=history,
         groq_api_key=current_app.config.get("GROQ_API_KEY", ""),
-        groq_model=current_app.config.get("GROQ_MODEL", "llama3-8b-8192"),
+        groq_model=current_app.config.get("GROQ_MODEL", "llama-3.1-8b-instant"), # FIXED DEAD MODEL
     )
 
     # ── 5. Persist assistant message ────────────────────────────────────
