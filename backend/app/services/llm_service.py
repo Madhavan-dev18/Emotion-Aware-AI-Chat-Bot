@@ -15,7 +15,7 @@ EMPATHETIC_RESPONSES = {
     ("neutral", "neutral"): ["I'm here. What's on your mind?"]
 }
 
-ddef _call_groq(messages: list[dict], system_prompt: str, api_key: str, model: str) -> Optional[str]:
+def _call_groq(messages: list[dict], system_prompt: str, api_key: str, model: str) -> Optional[str]:
     """Sends request to Groq with explicit error debugging."""
     if not api_key:
         logger.warning("LLM Service Warning: GROQ_API_KEY is empty. Using local fallback responses.")
