@@ -1,44 +1,43 @@
 <div align="center">
 
-<img src="https://placehold.co/180x180/0d0221/00f5ff?text=ML&font=montserrat" alt="MoodLens Logo" width="120" height="120" style="border-radius: 24px;" />
+<img src="https://placehold.co/180x180/0d0221/00f5ff?text=ML&font=montserrat" alt="Havan Logo" width="120" height="120" style="border-radius: 24px;" />
 
-# 🧠 MoodLens
-### *Havan — The Emotion-Aware Chat Assistant*
+# 🧠 Havan
+### *Emotion-Aware Conversational AI*
 
 **Where Computer Vision meets Conversational Intelligence.**
 A real-time facial telemetry engine fused with a generative AI core — built to *feel* before it speaks.
 
 <br/>
 
-[![Build Status](https://img.shields.io/badge/build-passing-00f5ff?style=for-the-badge&logo=githubactions&logoColor=white&labelColor=0d0221)](#)
-[![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=0d0221&labelColor=0d0221)](#)
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=0d0221&labelColor=0d0221)](#)
 [![Flask](https://img.shields.io/badge/Flask-API-000000?style=for-the-badge&logo=flask&logoColor=white&labelColor=0d0221)](#)
 [![Groq](https://img.shields.io/badge/Groq-LLaMA_3.1-FF6B00?style=for-the-badge&logo=lightning&logoColor=white&labelColor=0d0221)](#)
 [![License](https://img.shields.io/badge/license-MIT-00f5ff?style=for-the-badge&labelColor=0d0221)](#)
 
 <br/>
 
-[**🚀 Live Demo**](#) · [**📐 Architecture**](#-system-architecture) · [**⚙️ Setup**](#-getting-started) · [**📡 API Docs**](#-api-reference)
+[**📐 Architecture**](#-system-architecture) · [**⚙️ Setup**](#-getting-started) · [**📡 API Docs**](#-api-reference)
 
 </div>
 
 <br/>
 
 <div align="center">
-<img src="https://placehold.co/1000x420/0d0221/00f5ff?text=MoodLens+%E2%80%94+Live+Emotion+Telemetry+Dashboard&font=montserrat" alt="MoodLens Dashboard Preview" width="100%" />
+<img src="https://placehold.co/1000x420/0d0221/00f5ff?text=Havan+%E2%80%94+Live+Emotion+Telemetry+Dashboard&font=montserrat" alt="Havan Dashboard Preview" width="100%" />
 </div>
 
 <br/>
 
 ---
 
-## 🌌 What is MoodLens?
+## 🌌 What is Havan?
 
-> MoodLens is not just a chatbot. It is a **bi-modal empathy engine**.
+> Havan is not just a chatbot. It is a **bi-modal empathy engine**.
 
-While conventional assistants read *what* you type, MoodLens reads *how you feel while you type it*. A lightweight computer-vision layer runs entirely **client-side**, streaming real-time emotional telemetry (Happy, Sad, Angry, Surprised, Fearful, Neutral) directly into the conversational context — giving the LLM a window into your affective state *before* it crafts a response.
+While conventional assistants read *what* you type, Havan reads *how you feel while you type it*. A lightweight computer-vision layer runs entirely **client-side**, streaming real-time facial emotion telemetry (Happy, Sad, Angry, Surprised, Fearful, Neutral) alongside your text — giving the LLM a window into your affective state before it crafts a response.
 
-Underneath the polished interface sits a hardened, security-first backend: JWT-secured, cross-origin-ready, and engineered with a **deterministic Crisis Interceptor** that can override the AI entirely when safety matters most.
+Underneath the interface sits a security-first Flask backend: JWT-secured (header-based Bearer tokens, no fragile cross-origin cookies), rate-limited, and engineered with a **keyword-based Crisis Interceptor** that scans every message and can bypass the LLM entirely when safety matters most.
 
 <br/>
 
@@ -50,14 +49,14 @@ Underneath the polished interface sits a hardened, security-first backend: JWT-s
 <tr>
 <td width="50%" valign="top">
 
-### 👁️ The Omni-Sensor
-Real-time facial micro-expression detection powered by `face-api.js` (SSD MobileNet V1), running locally in-browser via WebGL. Throttled to VGA resolution for optimal VRAM efficiency without sacrificing detection accuracy.
+### 👁️ Facial Emotion Scanner
+Real-time facial expression detection powered by `@vladmandic/face-api` (SSD MobileNet V1), running locally in-browser. Capped at 640×480 to avoid VRAM overflow, with built-in lighting and face-distance diagnostics and a rolling confidence buffer for smoothing.
 
 </td>
 <td width="50%" valign="top">
 
 ### 🧬 Fused Context Pipeline
-Emotional telemetry and text input are merged into a single contextual payload — giving the AI core a multi-dimensional view of user state, not just literal words.
+Text emotion analysis and live visual emotion are merged into a single payload per message — giving the AI core both *what* you said and *how you looked* while saying it.
 
 </td>
 </tr>
@@ -65,13 +64,13 @@ Emotional telemetry and text input are merged into a single contextual payload �
 <td width="50%" valign="top">
 
 ### ⚡ Groq-Powered Reasoning
-Sub-second inference via the Groq API running **LLaMA-3.1-8B-Instant** — empathetic, context-aware responses generated at LPU-grade speed.
+Sub-second inference via the Groq API running **LLaMA-3.1-8B-Instant**. The system prompt is dynamically built from the user's detected text emotion and visual emotion so responses match their state.
 
 </td>
 <td width="50%" valign="top">
 
 ### 🛡️ Crisis Interceptor
-A deterministic safety layer that scans for severe negative emotional patterns and crisis-language markers, **bypassing the LLM entirely** to deliver verified emergency resources when it matters most.
+A deterministic, keyword-based safety scan runs on every message. If crisis-language markers are detected, the LLM is bypassed entirely and a fixed safety message with crisis resources is returned instead.
 
 </td>
 </tr>
@@ -79,13 +78,13 @@ A deterministic safety layer that scans for severe negative emotional patterns a
 <td width="50%" valign="top">
 
 ### 🔄 Graceful Degradation
-If Groq rate-limits or fails, MoodLens seamlessly falls back to a curated, rule-based empathetic response matrix — zero downtime, zero broken UX.
+If the Groq API key is missing, rate-limited, or the call fails, Havan falls back to a curated emotion-matched response dictionary — zero downtime, zero broken UX.
 
 </td>
 <td width="50%" valign="top">
 
 ### 🔐 Hardened Auth Layer
-Flask + SQLAlchemy + JWT-Extended, using header-based Bearer tokens engineered for fully cross-origin, stateless authentication.
+Flask + SQLAlchemy + Flask-JWT-Extended + Bcrypt, with header-based Bearer auth, access/refresh token rotation, and Flask-Limiter rate limiting.
 
 </td>
 </tr>
@@ -97,25 +96,26 @@ Flask + SQLAlchemy + JWT-Extended, using header-based Bearer tokens engineered f
 
 ## 🗺️ System Architecture
 
-The MoodLens pipeline is a multi-stage data fusion process — from raw pixels to empathetic prose.
+The Havan pipeline fuses two emotion signals — text and face — before generating a response.
 
 ```mermaid
 flowchart TD
-    A[📷 Webcam Feed] --> B["face-api.js<br/>(SSD MobileNet V1 · WebGL · VGA)"]
-    B --> C{Emotion Vector<br/>Happy · Sad · Angry · Surprised · Fear · Neutral}
-    C --> D[⚛️ React State Layer]
+    A[📷 Webcam Feed] --> B["face-api.js<br/>(SSD MobileNet V1 · 640x480)"]
+    B --> C{Visual Emotion<br/>Happy · Sad · Angry · Surprised · Fear · Neutral}
+    C --> D[⚛️ React Chat UI]
     U[⌨️ User Text Input] --> D
     D --> E[🔐 JWT Bearer Auth]
     E --> F[🐍 Flask REST API]
-    F --> G{🚨 Crisis Interceptor<br/>Deterministic Scan}
-    G -->|Crisis Detected| H[📞 Emergency Hotline Response<br/>LLM Bypassed]
-    G -->|Safe| I{Groq API Available?}
-    I -->|Yes| J[🧠 Groq · LLaMA-3.1-8B-Instant<br/>Empathetic Generation]
-    I -->|Rate-Limited / Down| K[📋 Rule-Based Fallback Matrix]
-    J --> L[💬 Response Payload]
-    K --> L
-    H --> L
-    L --> M[🖥️ React UI Render]
+    F --> G[🧪 Emotion Engine<br/>Text Emotion + Sentiment]
+    G --> H{🚨 Crisis Interceptor<br/>Keyword Scan}
+    H -->|Crisis Detected| I[📞 Safety Resources Response<br/>LLM Bypassed]
+    H -->|Safe| J{Groq API Key Set?}
+    J -->|Yes| K[🧠 Groq · LLaMA-3.1-8B-Instant]
+    J -->|No / Error| L[📋 Rule-Based Empathetic Fallback]
+    K --> M[💬 Response Payload]
+    L --> M
+    I --> M
+    M --> N[🖥️ React UI Render]
 
     style A fill:#0d0221,stroke:#00f5ff,color:#fff
     style B fill:#1a0b3d,stroke:#00f5ff,color:#fff
@@ -124,60 +124,33 @@ flowchart TD
     style U fill:#0d0221,stroke:#00f5ff,color:#fff
     style E fill:#1a0b3d,stroke:#ffcc00,color:#fff
     style F fill:#0d0221,stroke:#000,color:#fff
-    style G fill:#330000,stroke:#ff3333,color:#fff
+    style G fill:#1a0b3d,stroke:#06d6a0,color:#fff
     style H fill:#330000,stroke:#ff3333,color:#fff
-    style I fill:#1a0b3d,stroke:#ff6b00,color:#fff
+    style I fill:#330000,stroke:#ff3333,color:#fff
     style J fill:#1a0b3d,stroke:#ff6b00,color:#fff
-    style K fill:#1a0b3d,stroke:#888,color:#fff
-    style L fill:#0d0221,stroke:#00f5ff,color:#fff
-    style M fill:#0d0221,stroke:#61dafb,color:#fff
+    style K fill:#1a0b3d,stroke:#ff6b00,color:#fff
+    style L fill:#1a0b3d,stroke:#888,color:#fff
+    style M fill:#0d0221,stroke:#00f5ff,color:#fff
+    style N fill:#0d0221,stroke:#61dafb,color:#fff
 ```
-
-<br/>
 
 ---
 
 ## 🧰 Tech Stack
 
-<table>
-<tr><th align="center">🎨 Frontend</th><th align="center">⚙️ Backend</th><th align="center">🧠 AI / ML</th></tr>
-<tr>
-<td align="center" valign="top">
-
-![React](https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=61DAFB)
-![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
-![face-api.js](https://img.shields.io/badge/face--api.js-WebGL-00f5ff?style=flat-square)
-![Vercel](https://img.shields.io/badge/Vercel-000000?style=flat-square&logo=vercel&logoColor=white)
-
-</td>
-<td align="center" valign="top">
-
-![Flask](https://img.shields.io/badge/Flask-000000?style=flat-square&logo=flask&logoColor=white)
-![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-D71F00?style=flat-square&logo=python&logoColor=white)
-![JWT](https://img.shields.io/badge/JWT--Extended-Bearer_Auth-000000?style=flat-square&logo=jsonwebtokens&logoColor=white)
-![Render](https://img.shields.io/badge/Render-46E3B7?style=flat-square&logo=render&logoColor=white)
-
-</td>
-<td align="center" valign="top">
-
-![Groq](https://img.shields.io/badge/Groq_API-FF6B00?style=flat-square&logo=lightning&logoColor=white)
-![LLaMA](https://img.shields.io/badge/LLaMA--3.1--8B--Instant-0467DF?style=flat-square&logo=meta&logoColor=white)
-![SSD MobileNet](https://img.shields.io/badge/SSD_MobileNet_V1-Face_Detection-00f5ff?style=flat-square)
-
-</td>
-</tr>
-</table>
-
-<br/>
+| Layer | Technology |
+| --- | --- |
+| Frontend | React 19, Vite, React Router, Tailwind CSS, Axios |
+| Facial Emotion | `@vladmandic/face-api` (SSD MobileNet V1) |
+| Backend | Flask 3, Flask-SQLAlchemy, Flask-Bcrypt, Flask-JWT-Extended, Flask-Limiter, Flask-Cors |
+| LLM | Groq API (`llama-3.1-8b-instant`) |
+| Text Emotion Engine | HuggingFace Transformers (optional, RAM-gated) with rule-based keyword fallback |
+| Database | SQLite (dev) / PostgreSQL (production via `psycopg2`) |
+| Deployment | Vercel (frontend), Render-style WSGI via Gunicorn (backend) |
 
 ---
 
 ## ⚙️ Getting Started
-
-<details>
-<summary><b>🖥️ Frontend Setup (React)</b></summary>
-
-<br/>
 
 ```bash
 # Clone the repository
@@ -191,14 +164,7 @@ npm install
 npm run dev
 ```
 
-> **Note:** `face-api.js` model weights are loaded via CDN at runtime — no local model bundling required. Ensure the browser has camera permissions enabled for the Omni-Sensor to initialize.
-
-</details>
-
-<details>
-<summary><b>🐍 Backend Setup (Flask)</b></summary>
-
-<br/>
+> **Note:** `@vladmandic/face-api` model weights are bundled/loaded by the frontend at runtime. Ensure the browser has camera permissions enabled for the facial emotion scanner to initialize.
 
 ```bash
 cd Havan-A-Emotion-Aware-Chat-Assistant/backend
@@ -210,44 +176,32 @@ source venv/bin/activate   # Windows: venv\Scripts\activate
 # Install dependencies
 pip install -r requirements.txt
 
-# Initialize the database
-flask db upgrade
-
 # Run the API server
-flask run
+python run.py
 ```
-
-</details>
-
-<details>
-<summary><b>🔑 Environment Variables</b></summary>
-
-<br/>
 
 Create a `.env` file in the `backend/` directory with the following keys:
 
 | Variable | Description |
-|---|---|
-| `GROQ_API_KEY` | API key for Groq's LLaMA-3.1-8B-Instant inference |
+| --- | --- |
+| `SECRET_KEY` | Flask secret key |
 | `JWT_SECRET_KEY` | Secret used to sign and verify JWT Bearer tokens |
-| `DATABASE_URL` | SQLAlchemy database connection string |
-| `FLASK_ENV` | `development` / `production` |
-| `CORS_ORIGINS` | Comma-separated list of allowed frontend origins |
-
-</details>
-
-<br/>
+| `DATABASE_URL` | SQLAlchemy database connection string (defaults to local SQLite) |
+| `GROQ_API_KEY` | API key for Groq's LLaMA-3.1-8B-Instant inference |
+| `GROQ_MODEL` | Model name (default: `llama-3.1-8b-instant`) |
+| `MAX_MEMORY_TURNS` | Number of past messages sent as conversation history (default: 10) |
+| `ALLOWED_ORIGINS` | Comma-separated list of allowed frontend origins for CORS |
+| `USE_ML_MODELS` | Set to `true` to enable HuggingFace transformer pipelines (requires >1GB RAM); defaults to a lightweight rule-based emotion/sentiment engine |
 
 ---
 
 ## 📡 API Reference
 
-<details>
-<summary><b>🔐 POST /api/auth/login — Authenticate User</b></summary>
+### `POST /api/auth/register`
+Creates a new user account and returns access/refresh tokens.
 
-<br/>
-
-Returns a signed JWT Bearer token for use in the `Authorization` header of subsequent requests.
+### `POST /api/auth/login`
+Authenticates with username/email + password and returns access/refresh tokens.
 
 ```json
 // Request
@@ -258,92 +212,45 @@ Returns a signed JWT Bearer token for use in the `Authorization` header of subse
 
 // Response
 {
+  "user": { "id": 1, "username": "demo_user", "display_name": "demo_user", "avatar_emoji": "🤖" },
   "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "token_type": "Bearer"
+  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 }
 ```
 
-</details>
-
-<details>
-<summary><b>💬 POST /api/chat — Send Fused Message</b></summary>
-
-<br/>
-
-Accepts text input alongside the live emotion vector captured by the Omni-Sensor. Triggers the Crisis Interceptor scan before routing to Groq.
+### `POST /api/chat/sessions/<session_id>/messages`
+Accepts text input alongside the live visual emotion captured by the facial scanner. Runs the text emotion engine and Crisis Interceptor before routing to Groq.
 
 ```json
 // Request — Header: Authorization: Bearer <token>
 {
-  "message": "I've had a really rough day...",
-  "emotion_vector": {
-    "dominant": "sad",
-    "scores": {
-      "happy": 0.02,
-      "sad": 0.81,
-      "angry": 0.03,
-      "surprised": 0.01,
-      "fearful": 0.05,
-      "neutral": 0.08
-    }
-  }
+  "content": "I've had a really rough day...",
+  "visual_emotion": "sad"
 }
 
 // Response
 {
-  "reply": "That sounds genuinely heavy. Want to talk through what happened?",
-  "source": "groq",
-  "interceptor_triggered": false
+  "user_message": { "id": 12, "role": "user", "content": "I've had a really rough day...", "emotion": { "primary": "sadness", "visual": "sad", "sentiment": "negative" } },
+  "assistant_message": { "id": 13, "role": "assistant", "content": "That sounds genuinely heavy. Want to talk through what happened?" },
+  "emotion": { "primary_emotion": "sadness", "emotion_scores": { "...": "..." }, "sentiment": "negative", "is_crisis": false },
+  "response_source": "groq_llm"
 }
 ```
 
-</details>
-
-<details>
-<summary><b>🚨 Crisis Interceptor — Response Schema</b></summary>
-
-<br/>
-
-When deterministic crisis-pattern matching fires, the LLM is bypassed entirely:
-
-```json
-{
-  "reply": "It sounds like you're going through something serious. You're not alone — please reach out to a crisis helpline.",
-  "source": "crisis_interceptor",
-  "interceptor_triggered": true,
-  "resources": [
-    { "name": "National Helpline", "contact": "<region-specific hotline>" }
-  ]
-}
-```
-
-</details>
-
-<br/>
+When the Crisis Interceptor fires on keyword-based detection, the LLM is bypassed entirely and `response_source` is `"safety_interceptor"`, returning a fixed message with crisis helpline resources.
 
 ---
 
 ## 🛣️ Roadmap
 
-- [ ] Voice-tone fusion as a third telemetry signal
-- [ ] Persistent emotional history visualization dashboard
-- [ ] Multi-language Crisis Interceptor keyword sets
-- [ ] WebSocket-based streaming responses
-
-<br/>
+* [ ] Voice-tone fusion as a third telemetry signal
+* [ ] Persistent emotional history visualization dashboard
+* [ ] Multi-language Crisis Interceptor keyword sets
+* [ ] WebSocket-based streaming responses
+* [ ] Live deployment links (frontend + backend)
 
 ---
 
-<div align="center">
+**Built by [Madhavan](https://github.com/Madhavan-dev18)**
 
-### 🛰️ Deployment
-
-**Frontend** → ![Vercel](https://img.shields.io/badge/Vercel-000000?style=flat-square&logo=vercel&logoColor=white) &nbsp;|&nbsp; **Backend** → ![Render](https://img.shields.io/badge/Render-46E3B7?style=flat-square&logo=render&logoColor=white)
-
-<br/>
-
-**Built with precision by [Madhavan](https://github.com/Madhavan-dev18)**
-
-⭐ *If MoodLens resonates with you, consider starring the repo.*
-
-</div>
+⭐ *If Havan resonates with you, consider starring the repo.*
